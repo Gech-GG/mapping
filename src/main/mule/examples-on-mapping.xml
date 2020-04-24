@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="6d24ff0e-f412-48d5-b9fb-055dc23c0dc1" >
+		<http:listener-connection host="0.0.0.0" port="8087" />
+	</http:listener-config>
+	<flow name="example-trim-mappingFlow" doc:id="9f83d7f4-73ea-4df4-94ad-f6eda87ff685" >
+		<http:listener doc:name="Listener" doc:id="6e976fb0-c2a7-4893-9534-edb12a4ac9c3" config-ref="HTTP_Listener_config" path="/trim"/>
+		<ee:transform doc:name="Firew's Assignment" doc:id="633a2e0a-cd99-4c48-9ed3-8c88a5d8b258" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+import * from dw::core::Strings
+output application/json
+
+var name= "Sr Firew III Max." splitBy(" ")
+
+
+---
+ {
+	"FirstName":name[1],
+	//"LastName" : substringBeforeLast(name[3], "")
+	"LastName": name[3]
+
+}
+]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+	<flow name="examples-on-mappingFlow" doc:id="8b30b9d8-534f-4c3b-a314-56a0ff116909" >
+		<ee:transform doc:name="pluck example" doc:id="cbb16790-5a7e-4070-8df5-f62a789f9f58" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+
+ var readXml = read("<prices>
+    <basic>9.99</basic>
+    <premium>53.00</premium>
+    <vip>398.99</vip>
+    </prices>", "application/xml")
+---
+"result" : {
+  "keys" : readXml.prices pluck($$),
+  "values" : readXml.prices pluck($) as Number,
+  "indices" : readXml.prices pluck($$$)
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+	<flow name="example-trim-mappingFlow2" doc:id="767ea8ca-2124-4d66-84f4-9eec38a14155" >
+		<ee:transform doc:name="finding Top scorers from json" doc:id="06ae8a94-6f40-4150-bb32-772e6c2dd7fe" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+var students ={
+ "availablePositions": 3,
+ "candidates":
+    [
+      {
+        "name":"Gunther Govan",
+        "score":99
+      },
+       {
+        "name":"Michael Patrick",
+        "score":35
+      },
+      {
+        "name":"Amalia Silva",
+        "score":96
+      },
+       {
+        "name":"Tom Mathews",
+        "score":40
+      },
+      {
+        "name":"Simon Wilson",
+        "score":84
+      },
+      {
+        "name":"Janet Nguyen",
+        "score":52
+      }
+    ]
+}
+---
+{
+    TopCandidateList: (students.candidates map ((candidate) -> {
+        firstName: candidate.name,
+        rank: candidate.score
+    }) orderBy $.rank) [ students.availablePositions to -1]
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+	<flow name="example-trim-mappingFlow1" doc:id="e056d15e-aa7f-40ca-89fe-1d6d789c8fef" >
+		<ee:transform doc:name="transform from metadata" doc:id="602720e1-00e3-449a-ae03-52b29cca81b2" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+
+---
+{
+	nameOfBuyer: payload.order.buyer.name,
+	product : payload.order.product.model,
+	salesperson: payload.order.salesperson
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+	<flow name="examples-on-mappingFlow1" doc:id="5c54f816-09b6-4f89-90ca-b69fa16a0800" >
+		<ee:transform doc:name="Transform Message" doc:id="2604066c-a365-4714-af67-3b254066a7d5" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+items: payload.books map (item, index) -> {
+      book: item mapObject (value, key) -> {
+      (upper(key)): value
+      }
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+</mule>
